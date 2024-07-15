@@ -41,31 +41,37 @@ async def get_pieces(composer_id: int|None = None):
 
 @app.post("/composers")
 async def create_composer(composer_name: str, home_country: str) -> None:
-    try:
-        new_composer_id = len(composers)
-        new_composer_id += 1
-    except :
-        print("Duplicate ID detected")
-    new_composer = Composer(name=composer_name,composer_id=new_composer_id, home_country=home_country)
+    high = 0
+    for i in composers:
+        if  i.composer_id > high:
+            high = i.composer_id
+    high += 1
+    new_composer = Composer(name=composer_name,composer_id=high, home_country=home_country)
     composers.append(new_composer)
 
 @app.post("/pieces")
 async def create_piece(piece: Piece) -> None:
     composer_id = []
-    for index_id in pieces:
+    for index_id in composers:
         composer_id.append(index_id.composer_id)
     if piece.composer_id not in composer_id:
         raise HTTPException(status_code=400, detail="try another id, the one you entered was not found")
     pieces.append(piece)
     
 
-@app.put("/{composer_id}")
+@app.put("/composers/{composer_id}")
 async def update_composer(composer_id: int, update_composer: Composer):
-    for index, composer in enumerate(composers):
-        if composer.composer_id == composer_id:
+   # so if the id is not a duplicate of another id then make a new composer
+   for i, composer in enumerate(composers):
+       if update_composer.composer_id != composer_id and composer.composer_id == update_composer.composer_id:
+           raise HTTPException(status_code=400, detail='id already exists')
+       
+   for index, composer in enumerate(composers):
+        if composer_id  == composer.composer_id :
             composers[index] = update_composer
             return {"message": "Composer updated successfully"}
-    composers.append(update_composer)    
+   composers.append(update_composer)
+    
     
 @app.put("/pieces/{pieces_id}")
 async def update_pieces(piece_name: str, update_piece: Piece) -> None:
